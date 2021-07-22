@@ -34,6 +34,17 @@ class Stream:
             else:
                 dictionary[stream.merge_same_destination_adresses_key()] = stream
         return dictionary
+    @staticmethod
+    def filter_high_destination_ports(unieke_Streams,high_range):
+
+        dictionary = {}
+        for stream in unieke_Streams:
+            if int(stream.dstport[0]) >= int(high_range):
+                pass
+            else:
+                dictionary[stream.merge_same_source_adresses_key()] = stream
+        return dictionary
+
 
     @staticmethod
     def mergeports(unieke_Streams):

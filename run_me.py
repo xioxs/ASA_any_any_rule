@@ -18,6 +18,8 @@ def str2bool(v):
 def begin_parameters():
     parser = argparse.ArgumentParser(description='PYTHON3 GEBRUIKEN OM UIT TE VOEREN: Script gaat door hele syslog data op zoek naar unieke streams.')
     parser.add_argument('--nodes', '-n', help='Geef het maximum aantal nodes op dat 1 ACL mag bevatten. Default = 15', default=15)
+    parser.add_argument('--highports', '-t', help='Geef deze optie mee als je high ports op de destination gefilterd wil hebben.'
+                                                  'Voor windows starten de highports vanaf 49152')
     parser.add_argument('--pub', '-p', help='Stromen richting het internet komen vaak voor. Indien je deze algemeen wil maken kan je deze optie meegeven. Alle publieke destination '
                                             'adressen worden generiek gemaakt.',type=str2bool, nargs='?', const=True, default=False)
     parser.add_argument('--file', '-f', help='Locatie van het log bestand. Default waarde: log.txt', default="log.txt")
@@ -100,15 +102,27 @@ if __name__ == '__main__':
     spatie = 150
     teken = '#'
     filter_publieke_ip_adressen = args.pub
+    filter_high_ports_range = args.highports
     bestand = args.file
     print(" Aantal nodes in source ip moeten kleiner zijn dan: {} ".format(nodes).center(spatie,teken))
 
-    # file filteren en rekening houden met opgegeven paramaters.
+
+    # file filteren en rekening houden met opgegeven paramaters. Hier worden ook de Streams aangemaakt en toegevoegd in een SET. De classe Streams houdt zelf alle streams bij!
     inlezen_file(filter_publieke_ip_adressen, bestand)
+
+
+
 
     # alle sourcen met dezelfde destination en destination port samenvoegen.
     unieke_lijst = list(Stream.all_instances.copy())
-    dictionary = Stream.mergeprotocols(unieke_lijst)
+
+    if filter_high_ports_range is not None:
+        #print('# filtering highports higher than: {}'.format(filter_high_ports_range))
+        dictionary = Stream.filter_high_destination_ports(unieke_lijst,filter_high_ports_range)
+        filtered = list(dictionary.values())
+        dictionary = Stream.mergeprotocols(filtered)
+    else:
+        dictionary = Stream.mergeprotocols(unieke_lijst)
 
     #
     filtered = list(dictionary.values())
@@ -118,6 +132,10 @@ if __name__ == '__main__':
     dictionary = Stream.merge_destination_ip_addressess(filtered)
     filtered = list(dictionary.values())
     dictionary = Stream.mergeports(filtered)
+
+
+
+
 
     for item in dictionary.values():
         print("source ip:",item.srcip)
